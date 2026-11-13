@@ -42,7 +42,7 @@ npm run build
 
 ## 部署
 
-手机页面使用 GitHub Pages，当前发布路径为 `https://talentjay-ux.github.io/zhuadae/tingyu/`。源代码保留在本仓库。构建验证工作流不依赖本仓库的 Pages 设置。
+手机页面使用本仓库的 GitHub Pages：`https://talentjay-ux.github.io/tingyu-music-poc/`。原测试入口 `https://talentjay-ux.github.io/zhuadae/tingyu/` 同步保留手机版本。推送 main 后自动检查、构建并部署本仓库页面。
 
 音乐接口运行在 `https://tingyu-music-jay.xkcnjsfdny.chatgpt.site`。跨站部署时，由 HTML 的 `api-origin` 指定；GitHub 前端只发送公开歌曲查询，不携带服务密钥。接口必须允许匿名访问及 GitHub Pages 来源，才能在免登录页面使用。
 
