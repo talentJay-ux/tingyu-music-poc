@@ -26,6 +26,7 @@ def read_map(url):
 def inspect(root_url, max_maps):
     pending, seen, songs = [root_url], set(), set()
     entries = titled = 0
+    samples=[]
     while pending and len(seen) < max_maps:
         url = pending.pop(0)
         if url in seen: continue
@@ -33,6 +34,7 @@ def inspect(root_url, max_maps):
         seen.add(url)
         kind = root.tag.rsplit('}',1)[-1]
         if kind not in ('sitemapindex','urlset'): raise ValueError('response is not a sitemap')
+        page_samples=[]
         for entry in root:
             loc = entry.findtext('{*}loc','').strip()
             if not loc: continue
@@ -40,16 +42,18 @@ def inspect(root_url, max_maps):
                 if loc not in seen and loc not in pending: pending.append(loc)
                 continue
             entries += 1
+            if len(page_samples)<2: page_samples.append((loc,[k.tag.rsplit('}',1)[-1] for k in entry]))
             parsed = urlsplit(loc)
             match = re.fullmatch(r'/play/([1-9]\d{0,11})/?',parsed.path)
             if match and parsed.hostname in ('www.gequhai.com','gequhai.com'):
                 songs.add(match.group(1))
                 if entry.find('{*}title') is not None: titled += 1
-    return dict(maps_read=len(seen),pending_maps=len(pending),entries=entries,unique_song_ids=len(songs),
+        samples.append((url, len(root), page_samples))
+    return dict(samples=samples,maps_read=len(seen),pending_maps=len(pending),entries=entries,unique_song_ids=len(songs),
                 rows_with_direct_title=titled,complete_traversal=not pending)
 
 if __name__=='__main__':
     ap=argparse.ArgumentParser()
-    ap.add_argument('--max-maps',type=int,default=3)
+    ap.add_argument('--max-maps',type=int,default=150)
     args=ap.parse_args()
     print(json.dumps(inspect('https://www.gequhai.com/sitemap.xml',args.max_maps),ensure_ascii=False))
