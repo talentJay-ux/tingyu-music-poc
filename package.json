@@ -1,0 +1,10 @@
+{
+  "name": "tingyu-music-poc",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-static.mjs",
+    "check": "node --check public/app.js && node --check public/catalog.js"
+  }
+}
