@@ -1,5 +1,7 @@
 # 听屿 · 静态音乐播放器 POC
 
+在线试用：https://talentjay-ux.github.io/tingyu-music-poc/
+
 网易云风格的免登录前端，用于先验证 UI 和基本播放。没有依赖、没有服务器、没有账号系统，适合 GitHub Pages 的项目子路径。
 
 ## 已实现
