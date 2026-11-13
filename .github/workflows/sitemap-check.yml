@@ -1,0 +1,11 @@
+name: Inspect public Gequhai sitemap
+on: [push]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 scripts/inspect-sitemap.py
