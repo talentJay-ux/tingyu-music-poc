@@ -85,4 +85,16 @@ app.playTrack(first.id);
 await tick();
 assert.equal(app.calls.at(-1),first.audio,'legacy favorite without a URL recovers from catalogue');
 assert.equal(app.state.liked[0],first.id);
+// A renewed catalogue entry must win over an expired link in saved favorites.
+const currentIndex = mediaHost+'/checked-index';
+const neverLive = async path => {
+  assert.ok(path.includes('catalog.json'),'fresh index playback should not need live metadata');
+  return {ok:true,json:async()=>({tracks:[{...first,audio:currentIndex}]})};
+};
+app=boot(neverLive);
+await app.readCatalogue();
+app.playTrack(first.id);
+await tick();
+assert.deepEqual(app.calls,[currentIndex]);
+
 console.log('Saved replay passed: immediate persistence, cold replay, playlist order, expired URLs, legacy records and rapid selection.');

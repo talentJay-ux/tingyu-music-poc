@@ -6,8 +6,13 @@ for(const file of ['index.html','mobile.css','mobile.js','catalog.json'])cpSync(
 writeFileSync(new URL('dist/client/.nojekyll',root),'');
 const version = name => createHash('sha256').update(read('mobile/'+name)).digest('hex').slice(0,12);
 let page=read('mobile/index.html');
-const published = page.replace('./mobile.js"', './mobile.js?v='+version('mobile.js')+'"')
-  .replace('./mobile.css"', './mobile.css?v='+version('mobile.css')+'"');
+const scriptName='mobile.'+version('mobile.js')+'.js';
+const styleName='mobile.'+version('mobile.css')+'.css';
+for (const [source,target] of [['mobile.js',scriptName],['mobile.css',styleName]]) {
+  cpSync(new URL('mobile/'+source,root),new URL('dist/client/'+target,root));
+}
+const published = page.replace('./mobile.js"', './'+scriptName+'"')
+  .replace('./mobile.css"', './'+styleName+'"');
 writeFileSync(new URL('dist/client/index.html',root),published);
 page=page.replace(/<link[^>]+href=["'](?:\.\/)?mobile\.css["'][^>]*>/i,()=>'<style>'+read('mobile/mobile.css')+'</style>');
 page=page.replace(/<script[^>]+src=["'](?:\.\/)?mobile\.js["'][^>]*>\s*<\/script>/i,()=>'<script type="module">'+read('mobile/mobile.js')+'</script>');
