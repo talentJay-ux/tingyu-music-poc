@@ -1,0 +1,11 @@
+import {readFileSync,writeFileSync,mkdirSync,cpSync,rmSync} from 'node:fs';
+const root=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,root),'utf8');
+rmSync(new URL('dist/client',root),{recursive:true,force:true});mkdirSync(new URL('dist/client',root),{recursive:true});
+for(const file of ['index.html','mobile.css','mobile.js'])cpSync(new URL('mobile/'+file,root),new URL('dist/client/'+file,root));
+writeFileSync(new URL('dist/client/.nojekyll',root),'');
+let page=read('mobile/index.html');
+page=page.replace(/<link[^>]+href=["'](?:\.\/)?mobile\.css["'][^>]*>/i,()=>'<style>'+read('mobile/mobile.css')+'</style>');
+page=page.replace(/<script[^>]+src=["'](?:\.\/)?mobile\.js["'][^>]*>\s*<\/script>/i,()=>'<script type="module">'+read('mobile/mobile.js')+'</script>');
+if(/SoundHelix|soundhelix\.com|demo-[123]/i.test(page))throw new Error('Non-Gequhai audio leaked into mobile build');
+writeFileSync(new URL('tingyu-poc.html',root),page);
+console.log('Built Gequhai-only mobile frontend.');

@@ -1,10 +1,12 @@
 {
   "name": "tingyu-music-poc",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-static.mjs",
-    "check": "node --check public/app.js && node --check public/catalog.js"
+    "dev": "NODE_USE_ENV_PROXY=1 node scripts/dev-mobile.mjs",
+    "build": "node scripts/build-mobile-static.mjs",
+    "check": "node --check mobile/mobile.js && node --check src/gequhai.mjs && node --check worker/api.mjs",
+    "test": "node tests/backend-contract.mjs"
   }
 }
