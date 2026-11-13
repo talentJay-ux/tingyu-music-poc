@@ -7,6 +7,6 @@
     "dev": "NODE_USE_ENV_PROXY=1 node scripts/dev-mobile.mjs",
     "build": "node scripts/build-mobile-static.mjs",
     "check": "node --check mobile/mobile.js && node --check src/gequhai.mjs && node --check worker/api.mjs",
-    "test": "node tests/backend-contract.mjs"
+    "test": "node tests/backend-contract.mjs && node tests/saved-replay.mjs"
   }
 }
