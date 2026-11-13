@@ -4,6 +4,7 @@ const API = pages ? API_ORIGIN : '';
 let retryDirectMedia = null;
 const directTracks = new Map();
 let cataloguePromise;
+let indexLoadedAt=0;
 function mediaUrl(value) {
   try {
     const url = new URL(value);
@@ -12,12 +13,15 @@ function mediaUrl(value) {
   } catch { return ''; }
 }
 
-function readCatalogue() {
+function readCatalogue(refresh=false) {
+  if (refresh || (indexLoadedAt && Date.now()-indexLoadedAt > 600000)) cataloguePromise=null;
   if (!cataloguePromise) {
     cataloguePromise = fetch('/tingyu-music-poc/catalog.json', {cache:'no-cache', signal:AbortSignal.timeout(10000)})
       .then(async response => {
         if (!response.ok) throw new Error('直连曲目索引暂时无法加载');
         const catalog = await response.json();
+        directTracks.clear();
+        indexLoadedAt=Date.now();
         for (const track of catalog.tracks) {
           if (numeric(track.id)) directTracks.set(String(track.id), {...track, audio:mediaUrl(track.audio)});
         }
@@ -106,6 +110,14 @@ function playTrack(id, ids=null) {
   const token=++playToken;
   retryDirectMedia=null;
   audio.pause();
+  // While resolving the new song, discard the old media and its seek state.
+  audio.removeAttribute('src');
+  audio.load();
+  $('#seek').value=0;
+  $('#seek').style.setProperty('--fill','0%');
+  $('#mini-progress-fill').style.width='0%';
+  $('#elapsed').textContent='00:00';
+  $('#duration').textContent='00:00';
   save();
   updatePlayer();
   const direct = pages && directTracks.get(id);
@@ -132,10 +144,21 @@ function playTrack(id, ids=null) {
     lyrics=parseLyrics(track.lyrics);
     drawLyrics(); mediaMetadata(); updatePlayer();
   }
-  if (direct?.audio) {
+  if (!pages) {
+    liveApi('/api/play/'+id).then(track=>{
+      if (!active()) return;
+      details(track);
+      const url = mediaUrl(track.url);
+      start(url || API+'/api/audio/'+id);
+    }).catch(()=>{if (active()) start(API+'/api/audio/'+id);});
+  } else if (direct?.audio) {
     details(direct);
     retryDirectMedia = async () => {
       retryDirectMedia = null;
+      await readCatalogue(true).catch(()=>null);
+      const replacement=directTracks.get(id);
+      if (!active()) return;
+      if (replacement?.audio && replacement.audio!==direct.audio) { details(replacement); start(replacement.audio); return; }
       const refreshed = await liveApi('/api/play/'+id);
       if (!active()) return;
       const url = mediaUrl(refreshed.url);
@@ -150,7 +173,7 @@ function playTrack(id, ids=null) {
     start(direct.audio);
   } else if (pages) {
     // Covers restored playlists on first load as well as tracks outside the index.
-    readCatalogue().catch(()=>null).then(async () => {
+    readCatalogue(!!direct && !direct.audio).catch(()=>null).then(async () => {
       if (!active()) return;
       const indexed=directTracks.get(id);
       if (indexed?.audio) { details(indexed); start(indexed.audio); return; }
@@ -162,9 +185,6 @@ function playTrack(id, ids=null) {
       if (!active()) return;
       loading=false; playError='当前网络无法取得播放地址，可在歌曲海原页播放。'; updatePlayer(); showPlayer();
     });
-  } else {
-    start(API+'/api/audio/'+id);
-    liveApi('/api/play/'+id).then(details).catch(()=>{});
   }
 }
 function togglePlayback(){if(pages&&currentId&&audio.paused&&audio.getAttribute('src')&&playError==='请点播放继续。'){playError='';audio.play().catch(()=>{playError='当前音源未能播放。';updatePlayer();});return;}if(!currentId){const id=visibleIds[0]||state.queue[0];if(id)playTrack(id,visibleIds.length?visibleIds:state.queue);else toast('先搜索一首喜欢的歌吧');return;}if(playError||!audio.getAttribute('src')){playTrack(currentId);return;}if(audio.paused){audio.play().catch(()=>{playError='暂时无法继续播放，请点击重试。';updatePlayer();});}else audio.pause();}
