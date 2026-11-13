@@ -146,6 +146,18 @@ app=boot(async(path)=>{
   throw Error(path);
 });
 assert.deepEqual(Array.from((await app.api('/api/search?q=贾斯汀&page=1')).songs,t=>t.id),['7','9']);
+// Gequhai can return a successful but empty search for a song already in its catalogue.
+const love={rows:[[14867,'Love Story','Taylor Swift'],[14868,'Love Story (Live)','Cover']],queries:{}};
+const noHits=async()=>({songs:[],hasMore:false});
+app=boot(async path=>({ok:true,json:path.includes('compact.json')?async()=>love:noHits}));
+for(const query of ['Love Story','Taylor Swift Love Story','Ｌｏｖｅ　Ｓｔｏｒｙ']){
+  const result=await app.api('/api/search?q='+encodeURIComponent(query)+'&page=1');
+  assert.equal(result.songs[0].id,'14867');
+  assert.equal(result.localOnly,true);
+}
+assert.equal((await app.api('/api/search?q=does-not-exist&page=1')).songs.length,0);
+app=boot(offline,[],{searchIndex:love,searchSongs:noHits});
+assert.equal((await app.api('/api/search?q=Love%20Story&page=1')).songs[0].id,'14867');
 const renewed=mediaHost+'/fresh-at-tap';
 const nativeCalls=[];
 app=boot(offline,[],{

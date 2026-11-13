@@ -5,7 +5,8 @@ const output=new URL('dist/client/',root);
 const read=p=>readFile(new URL(p,root),'utf8');
 const [html,css,ui,adapter]=await Promise.all(['mobile/index.html','mobile/mobile.css','mobile/mobile.js','src/gequhai.mjs'].map(read));
 const body=html.split('<body>')[1].split('</body>')[0].replace(/<script[\s\S]*?<\/script>/g,'');
-const version='1.0.0';
+const searchIndex=await read('mobile/search-index/compact.json');
+const version='1.0.1';
 const bundle=`// ==UserScript==
 // @name         听屿 · 歌曲海直连版
 // @namespace    https://talentjay-ux.github.io/tingyu-music-poc/
@@ -34,7 +35,7 @@ const bundle=`// ==UserScript==
   history.replaceState(null,'','#/tingyu/'+pick);
   const nativeGequhai=(()=>{
     ${adapter.replace(/^export /gm,'')}
-    return {chartSongs,searchSongs,songDetail,songPlayback};
+    return {chartSongs,searchSongs,songDetail,songPlayback,searchIndex:${searchIndex}};
   })();
   ${ui}
 })();\n`;
