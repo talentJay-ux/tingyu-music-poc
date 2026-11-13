@@ -23,7 +23,7 @@ def read_map(url):
         raise ValueError('sitemap exceeds the XML format limit')
     return ET.fromstring(raw)
 
-def inspect(root_url, max_maps):
+def inspect(root_url, max_maps, write_ids=None):
     pending, seen, songs = [root_url], set(), set()
     entries = titled = 0
     samples=[]
@@ -49,11 +49,15 @@ def inspect(root_url, max_maps):
                 songs.add(match.group(1))
                 if entry.find('{*}title') is not None: titled += 1
         samples.append((url, len(root), page_samples))
+    if write_ids:
+        with open(write_ids,'w',encoding='utf-8') as file:
+            json.dump(sorted(map(int,songs)), file, separators=(',',':'))
     return dict(samples=samples,maps_read=len(seen),pending_maps=len(pending),entries=entries,unique_song_ids=len(songs),
                 rows_with_direct_title=titled,complete_traversal=not pending)
 
 if __name__=='__main__':
     ap=argparse.ArgumentParser()
     ap.add_argument('--max-maps',type=int,default=150)
+    ap.add_argument('--ids',help='write all observed song IDs to this JSON file')
     args=ap.parse_args()
-    print(json.dumps(inspect('https://www.gequhai.com/sitemap.xml',args.max_maps),ensure_ascii=False))
+    print(json.dumps(inspect('https://www.gequhai.com/sitemap.xml',args.max_maps,args.ids),ensure_ascii=False))
