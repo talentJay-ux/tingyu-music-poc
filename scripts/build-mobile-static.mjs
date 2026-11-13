@@ -3,6 +3,7 @@ import {readFileSync,writeFileSync,mkdirSync,cpSync,rmSync} from 'node:fs';
 const root=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,root),'utf8');
 rmSync(new URL('dist/client',root),{recursive:true,force:true});mkdirSync(new URL('dist/client',root),{recursive:true});
 for(const file of ['index.html','mobile.css','mobile.js','catalog.json'])cpSync(new URL('mobile/'+file,root),new URL('dist/client/'+file,root));
+cpSync(new URL('mobile/lyrics/',root),new URL('dist/client/lyrics/',root),{recursive:true});
 writeFileSync(new URL('dist/client/.nojekyll',root),'');
 const version = name => createHash('sha256').update(read('mobile/'+name)).digest('hex').slice(0,12);
 let page=read('mobile/index.html');

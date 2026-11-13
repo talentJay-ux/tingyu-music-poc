@@ -18,6 +18,9 @@ try {
   const live = await json(site+'?refresh='+Date.now());
   if (live.tracks?.length && Date.parse(live.updatedAt)>Date.parse(previous.updatedAt)) previous=live;
 } catch { /* The source checkout contains a usable baseline. */ }
+const lyricDir = new URL('../mobile/lyrics/',import.meta.url);
+const shards=await Promise.all(Array.from({length:16},async(_,i)=>
+  JSON.parse(await readFile(new URL(i.toString(16)+'.json',lyricDir),'utf8'))));
 const previousById = new Map(previous.tracks.map(track=>[track.id,track]));
 const tracks = new Map();
 const charts = {...previous.charts};
@@ -50,6 +53,7 @@ async function refresh(track) {
   for (const candidate of candidates) {
     try {
       const detail=await candidate();
+      if(String(detail?.id)===track.id && detail.lyrics?.trim()) shards[Number(track.id)%16][track.id]=detail.lyrics;
       const url=detail?.url || detail?.audio;
       if (String(detail?.id)!==track.id || !url || seen.has(url)) continue;
       seen.add(url);
@@ -76,4 +80,5 @@ if (!playable || playable < previousPlayable * 0.7) {
 const staging=new URL('catalog.next.json',file);
 await writeFile(staging,JSON.stringify({updatedAt:new Date().toISOString(),charts,tracks:rows}));
 await rename(staging,file);
+await Promise.all(shards.map((rows,i)=>writeFile(new URL(i.toString(16)+'.json',lyricDir),JSON.stringify(rows))));
 console.log('Verified',playable,'of',rows.length,'direct media URLs.');

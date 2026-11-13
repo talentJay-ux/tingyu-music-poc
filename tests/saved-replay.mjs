@@ -20,7 +20,10 @@ function boot(fetch, rejectedUrls=[]) {
     const el = {
       src:'', volume:1, paused:true, error:null, currentTime:0, style:{setProperty(){}}, dataset:{},
       classList:{toggle(){},add(){},remove(){}},
-      addEventListener(name,fn){events.set(name,fn);},
+      addEventListener(name,fn){if(!events.has(name))events.set(name,[]);events.get(name).push(fn);},
+      dispatch(name,event={}){for(const fn of events.get(name)||[])fn({...event,target:this});},
+      getBoundingClientRect(){return {left:20,width:200};},setPointerCapture(){},
+      querySelector(){return null;},scrollIntoView(){},
       setAttribute(){}, getAttribute(name){return this[name];}, removeAttribute(name){this[name]='';},
       querySelectorAll(){return [];}, pause(){this.paused=true;}, load(){this.error=null;},
       play(){
@@ -39,8 +42,8 @@ function boot(fetch, rejectedUrls=[]) {
     localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},
     document:{body:node('body'),querySelector:node,querySelectorAll:()=>[],addEventListener(){}},window:{addEventListener(){}}
   };
-  const app=runInNewContext(code+'\n;({state,like,remember,playTrack,save,readCatalogue})',sandbox);
-  return {...app, calls};
+  const app=runInNewContext(code+'\n;({state,like,remember,playTrack,save,readCatalogue,loadLyrics,lines:()=>lyrics.length})',sandbox);
+  return {...app,calls,node,emit:(id,name,event={})=>node(id).dispatch(name,event)};
 }
 
 const offline=async()=>{throw new Error('network unavailable');};
@@ -98,3 +101,28 @@ await tick();
 assert.deepEqual(app.calls,[currentIndex]);
 
 console.log('Saved replay passed: immediate persistence, cold replay, playlist order, expired URLs, legacy records and rapid selection.');
+
+
+const net=[];
+app=boot(async path=>{
+  net.push(path);
+  if (path.includes('/lyrics/')) return {ok:true,json:async()=>({[first.id]:'[00:00.00]A\n[00:10.20]B'})};
+  throw new Error('live API unavailable');
+});
+app.playTrack(first.id);
+await tick();
+await app.loadLyrics(first.id);
+assert.equal(app.lines(),2,'lyrics come from the Pages origin with the relay offline');
+assert.equal(net.some(path=>path.includes('/api/')),false);
+const media=app.node('#audio'),slider=app.node('#seek');
+media.duration=210; media.currentTime=12; media.dispatch('loadedmetadata');
+app.emit('#seek','pointerdown',{button:0,pointerId:1,clientX:70,preventDefault(){}});
+app.emit('#seek','pointermove',{pointerId:1,clientX:140});
+media.dispatch('timeupdate');
+assert.equal(Number(slider.value),600,'timeupdate must not pull the thumb away from the finger');
+assert.equal(media.currentTime,12,'seek only when the finger lifts');
+app.emit('#seek','pointerup',{pointerId:1,clientX:140});
+assert.equal(media.currentTime,126,'touch release seeks to the selected time');
+media.duration=NaN;media.dispatch('durationchange');
+assert.equal(slider.disabled,true,'unloaded media must not show a usable slider');
+console.log('Lyrics and touch regressions passed.');

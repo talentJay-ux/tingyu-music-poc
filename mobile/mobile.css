@@ -6,3 +6,12 @@
 
 /* Keep the decorative record clear of the headline on narrow phones. */
 @media(max-width:420px){.hero:before{right:-92px;opacity:.45}.hero:after{right:-43px;opacity:.55}}
+
+/* Keep the rail thin visually while giving a finger a full 44px target. */
+#seek {
+  display:block; height:44px; margin:-12px 0; touch-action:none; background:
+    linear-gradient(to right,var(--red) var(--fill,0%),#e7d5c3 var(--fill,0%)) center / 100% 4px no-repeat;
+}
+#seek::-webkit-slider-thumb {width:18px;height:18px;}
+#seek::-moz-range-thumb {width:18px;height:18px;}
+#seek:disabled {opacity:.5;}
