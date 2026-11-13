@@ -3,3 +3,6 @@
 
 /* Mobile touch and focus rules. */
 .app-header>.round-button{width:44px;height:44px}.track-menu,.queue-list .track-menu{width:44px;min-width:44px}.mini-player>.round-button{min-width:44px;width:44px}.search-box input,.form-field input,.form-field textarea{font-size:16px}.search-box input{min-height:44px}.search-box button{height:44px;min-width:44px}.player-art{width:min(100%,36dvh,320px);max-height:none}.lyrics-pane{height:min(320px,36dvh)}@media(max-height:760px){.player-art{width:min(100%,31dvh,320px);max-height:none}}
+
+/* Keep the decorative record clear of the headline on narrow phones. */
+@media(max-width:420px){.hero:before{right:-92px;opacity:.45}.hero:after{right:-43px;opacity:.55}}
