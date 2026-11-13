@@ -58,3 +58,11 @@ NODE_USE_ENV_PROXY=1 node tests/mobile-integration-checks.mjs http://127.0.0.1:4
 第一条检查公开部署，包括匿名访问；第二条直接执行相同 Worker 处理器并请求真实上游。测试覆盖多位歌手搜索、分页、榜单、真实音频、初始 / 中段 / 尾部 Range、跨域和无效输入。
 
 歌单数据保存在 `tingyu:mobile:v2`，不跨设备自动同步。iOS 音量由系统控制，首次播放需要点击触发。上游网站或具体音源发生变化时，接口适配可能需要更新。
+
+## 搜索与播放模式
+
+Pages 首先使用歌曲海实时搜索的返回顺序和分页。实时查询失败时，从本机最近成功的搜索和随站发布的关键词索引中查询，并标记为本地结果。「数据与设置 → 原站搜索与播放」可让榜单、搜索、收藏、歌单和队列直接打开歌曲海首方页面。首方页面的播放器自行取得当前音频，听屿的列表仍按歌曲 ID 保存在原浏览器。
+
+支持用户脚本的手机浏览器还可以打开 `source-mode.html`，安装构建生成的 `tingyu.user.js`。它只在 `https://www.gequhai.com/...#/tingyu/...` 启动，以歌曲海自己的 origin 读取搜索、榜单、歌词及按需播放地址。此模式使用该 origin 的本地存储，歌单可以通过导出和导入转移。
+
+公开 sitemap 提供 URL，没有歌名或歌手。`scripts/inspect-sitemap.py --ids ids.json` 遍历其中列出的页面，`scripts/pack-sitemap.py ids.json` 生成仅按需加载的编号表。`node scripts/enrich-sitemap.mjs 100` 可分批补充可读的歌名、歌手，临时上游错误不会清空既有记录。完整编号表不代表完整标题索引；搜索无匹配时仍可前往同一关键词的原站结果。

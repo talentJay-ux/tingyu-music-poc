@@ -14,8 +14,8 @@ const server=http.createServer(async(req,res)=>{
    if(!response.body||req.method==='HEAD'){res.end();return;}
    Readable.fromWeb(response.body).on('error',()=>res.destroy()).pipe(res);return;
   }
-  const files={'/':'index.html','/index.html':'index.html','/mobile.css':'mobile.css','/mobile.js':'mobile.js'};
-  const name=/^\/lyrics\/[0-9a-f]\.json$/.test(path)?path.slice(1):files[path];if(!name){res.writeHead(404);res.end('Not found');return;}
+  const files={'/catalog.json':'catalog.json','/':'index.html','/index.html':'index.html','/mobile.css':'mobile.css','/mobile.js':'mobile.js'};
+  const name=/^\/search-index\/(compact\.json|sitemap\.ids)$/.test(path)?path.slice(1):/^\/lyrics\/[0-9a-f]\.json$/.test(path)?path.slice(1):files[path];if(!name){res.writeHead(404);res.end('Not found');return;}
   const body=await readFile(new URL('../mobile/'+name,import.meta.url));const ext=name.slice(name.lastIndexOf('.'));
   res.writeHead(200,{'Content-Type':mime[ext],'Cache-Control':'no-cache'});res.end(body);
  }catch(error){if(!res.headersSent)res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({message:'音乐连接失败，请重试。'}));}

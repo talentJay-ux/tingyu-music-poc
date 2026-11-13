@@ -20,3 +20,5 @@ page=page.replace(/<script[^>]+src=["'](?:\.\/)?mobile\.js["'][^>]*>\s*<\/script
 if(/SoundHelix|soundhelix\.com|demo-[123]/i.test(page))throw new Error('Non-Gequhai audio leaked into mobile build');
 writeFileSync(new URL('tingyu-poc.html',root),page);
 console.log('Built Gequhai-only mobile frontend.');
+cpSync(new URL('mobile/search-index/',root),new URL('dist/client/search-index/',root),{recursive:true});
+await import('./build-source-client.mjs');

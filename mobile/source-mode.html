@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>歌曲海直连版 · 听屿</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#fbf9f6;color:#332a28;font:16px/1.65 system-ui,sans-serif}main{max-width:460px;padding:32px 22px 50px;margin:auto}h1{font-size:28px;line-height:1.2}h2{font-size:18px;margin-top:30px}a{color:#ad312d}a.primary{display:block;background:#dc4945;color:white;text-align:center;text-decoration:none;font-weight:650;border-radius:14px;padding:12px 14px;margin:14px 0}li{margin:9px 0}small{color:#69605b}</style>
+<main><a href="./#/discover">‹ 听屿首页</a><h1>歌曲海直连版</h1><p>搜索和播放在歌曲海自己的网页完成，点歌时实时取址。</p>
+<a class="primary" id="original" href="https://www.gequhai.com/">直接打开歌曲海</a><small>普通手机浏览器可用。回到听屿后，原来的歌单仍在。</small>
+<p>要让榜单、收藏和自建歌单都采用原站播放，可在听屿「数据与设置」开启「原站搜索与播放」。</p><h2>在歌曲海使用听屿界面</h2><ol><li>使用支持用户脚本的浏览器，并启用用户脚本管理器。</li><li><a href="./tingyu.user.js">安装听屿用户脚本</a>。脚本仅在歌曲海的听屿入口运行。</li><li><a id="launch" href="https://www.gequhai.com/#/tingyu/discover">打开歌曲海上的听屿</a>。</li></ol><p><small>独立域名使用独立浏览器存储。要带走歌单，可在听屿设置里导出，再到直连版导入。</small></p></main>
+<script>
+const original=document.querySelector('#original'),launch=document.querySelector('#launch');
+const q=new URLSearchParams(location.search),song=q.get('song'),term=q.get('q');
+if(/^[1-9]\d{0,11}$/.test(song||'')){original.textContent='用歌曲海播放这首歌';original.href='https://www.gequhai.com/play/'+song+'#aplayer';launch.href='https://www.gequhai.com/play/'+song+'#/tingyu/track/'+song;}
+else if(term){original.textContent='在歌曲海搜索「'+term+'」';original.href='https://www.gequhai.com/search?s='+encodeURIComponent(term);launch.href='https://www.gequhai.com/#/tingyu/search/'+encodeURIComponent(term);}
+</script></html>

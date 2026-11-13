@@ -60,6 +60,19 @@ function cookieHeader() {
   return [...cookies].map(([k, v]) => k + '=' + v.value).join('; ');
 }
 async function upstream(path, options = {}) {
+  // On Gequhai, the browser owns its normal first-party session and referrer.
+  if (typeof window !== 'undefined' && window.location.origin === ORIGIN) {
+    const headers = new Headers(options.headers);
+    const referrer = headers.get('Referer') || ORIGIN+'/';
+    headers.delete('Referer');
+    headers.delete('Origin');
+    const response = await fetch(new URL(path,ORIGIN), {
+      ...options, headers, credentials:'same-origin', referrer,
+      cache:'no-store', referrerPolicy:'same-origin', signal:AbortSignal.timeout(18000)
+    });
+    if (!response.ok) throw new SourceError('歌曲海返回 HTTP '+response.status,502,'UPSTREAM_'+response.status);
+    return response.text();
+  }
   // Complete the site's ordinary HTTP session once when it sets a session cookie.
   // A persistent rejection is surfaced to the user; no challenge solving or evasion.
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -87,6 +100,7 @@ async function cached(key, ttl, fn) {
   return value;
 }
 async function session() {
+  if(typeof window!=='undefined' && window.location.origin===ORIGIN) return;
   if (!sessionReady || Date.now() - sessionStarted > 1800000) {
     sessionStarted = Date.now();
     sessionReady = upstream('/').catch(() => {}).then(() => true);
@@ -129,15 +143,36 @@ export async function songDetail(id) {
     return detail;
   });
 }
-export async function songPlayback(id) {
-  return cached('play:' + id, 90000, async () => {
-  const detail = await songDetail(id);
-  if (detail.type === '1') throw new SourceError('这首歌在歌曲海暂时没有在线音源。', 404, 'NO_ONLINE_SOURCE');
-  const response = await upstream('/api/music', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'http', 'X-Custom-Header': 'Key', Origin: ORIGIN, Referer: ORIGIN + '/play/' + id }, body: new URLSearchParams({ id: detail.playId, type: detail.type }) });
-  let data; try { data = JSON.parse(response); } catch { throw new SourceError('歌曲海的播放接口返回了无法识别的数据。'); }
-  let url = data?.data?.url;
-  if (typeof url !== 'string' || !/^https?:\/\//.test(url)) throw new SourceError(data.code === 430 ? '这首歌在歌曲海暂时没有在线音源。' : plain(String(data.msg || '这首歌暂时没有可用的播放链接。')), data.code === 430 ? 404 : 502, data.code === 430 ? 'NO_ONLINE_SOURCE' : 'NO_PLAYBACK_URL');
-  if (url.startsWith('http://')) url = 'https://' + url.slice(7);
-  return { ...detail, url, source: 'gequhai', sourceUrl: ORIGIN + '/play/' + id };
+async function requestMedia(detail) {
+  if (detail.type==='1') throw new SourceError('这首歌在歌曲海暂时没有在线音源。',404,'NO_ONLINE_SOURCE');
+  const text=await upstream('/api/music',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'http','X-Custom-Header':'Key',Origin:ORIGIN,Referer:ORIGIN+'/play/'+detail.id},
+    body:new URLSearchParams({id:detail.playId,type:detail.type})
+  });
+  let data;
+  try{data=JSON.parse(text);}catch{throw new SourceError('歌曲海的播放接口返回了无法识别的数据。');}
+  const url=data?.data?.url;
+  if(typeof url==='string' && /^https?:\/\//.test(url)) {
+    return {...detail,url:url.replace(/^http:/,'https:'),source:'gequhai',sourceUrl:ORIGIN+'/play/'+detail.id};
+  }
+  const message=plain(String(data.msg||'这首歌暂时没有可用的播放链接。'));
+  if (/会话已过期|会话过期/.test(message))throw new SourceError(message,502,'SESSION_EXPIRED');
+  throw new SourceError(message,data.code===430?404:502,data.code===430?'NO_ONLINE_SOURCE':'NO_PLAYBACK_URL');
+}
+
+export async function songPlayback(id,forceRefresh=false) {
+  if(!/^[1-9]\d{0,11}$/.test(String(id)))throw new SourceError('无效的歌曲编号。',400,'INVALID_ID');
+  if(forceRefresh){cache.delete('play:'+id);cache.delete('detail:'+id);}
+  return cached('play:'+id,90000,async()=>{
+    try{return await requestMedia(await songDetail(id));}
+    catch(error){
+      if(error.code!=='SESSION_EXPIRED')throw error;
+      cache.delete('detail:'+id);
+      // Start a fresh anonymous site session and obtain a new page-issued play ID.
+      // In first-party browser mode Gequhai manages its session cookies itself.
+      if(typeof window==='undefined'){cookies.clear();sessionReady=undefined;}
+      return requestMedia(await songDetail(id));
+    }
   });
 }

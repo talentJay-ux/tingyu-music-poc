@@ -15,3 +15,6 @@
 #seek::-webkit-slider-thumb {width:18px;height:18px;}
 #seek::-moz-range-thumb {width:18px;height:18px;}
 #seek:disabled {opacity:.5;}
+
+#source-play {display:inline-flex;align-items:center;min-height:44px;font-size:13px;}
+#source-play[hidden],#source-mode-link[hidden]{display:none;}

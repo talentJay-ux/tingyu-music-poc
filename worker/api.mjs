@@ -38,12 +38,17 @@ export default {
    if(path==='/api/search')return json(request,await searchSongs(u.searchParams.get('q'),Math.max(1,Math.min(200,Math.floor(Number(u.searchParams.get('page'))||1)))));
    if(path==='/api/chart')return json(request,await chartSongs(u.searchParams.get('kind')||'hot'));
    const play=path.match(/^\/api\/play\/(\d{1,12})$/);
-   if(play){const s=await songPlayback(play[1]);return json(request,{...s,audio:'/api/audio/'+play[1]});}
+   if(play){const s=await songPlayback(play[1],u.searchParams.get('refresh')==='1');return json(request,{...s,audio:'/api/audio/'+play[1]});}
    const audio=path.match(/^\/api\/audio\/(\d{1,12})$/);
    if(audio){
     const range=request.headers.get('Range');if(range&&!/^bytes=(?:\d+-\d*|-\d+)$/.test(range))return json(request,{error:'INVALID_RANGE',message:'不支持这个播放范围。'},416);
-    const song=await songPlayback(audio[1]);
-    const media=await mediaResponse(song.url,request,range);
+    let song=await songPlayback(audio[1]);
+    let media=await mediaResponse(song.url,request,range);
+    if(media.status===410){
+      await media.body?.cancel();
+      song=await songPlayback(audio[1],true);
+      media=await mediaResponse(song.url,request,range);
+    }
     if(media.status===416){const headers=new Headers(cors(request));if(media.headers.has('Content-Range'))headers.set('Content-Range',media.headers.get('Content-Range'));await media.body?.cancel();return new Response(null,{status:416,headers});}
     if(!media.ok){await media.body?.cancel();throw new SourceError('音源暂时无法播放，请重试或切换下一首。',502,'MEDIA_'+media.status);}
     const headers=new Headers(cors(request));for(const k of ['Content-Type','Content-Length','Content-Range','Accept-Ranges'])if(media.headers.has(k))headers.set(k,media.headers.get(k));
